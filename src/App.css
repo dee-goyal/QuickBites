@@ -36,3 +36,9 @@
     transform: rotate(360deg);
   }
 }
+
+/* styles.css */
+.custom-navbar {
+  background-color: #28a745; /* Bootstrap's success green color */
+}
+
