@@ -5,12 +5,9 @@ const app = express();
 const port = process.env.PORT || 5000;
 const mongoDB = require("./db");
 
-console.log("Starting the application...");
-
-// Async DB connection with error handling
-mongoDB().catch(err => {
-  console.error("MongoDB connection failed:", err);
-  process.exit(1);
+// Non-blocking DB connection
+mongoDB().then(connected => {
+  console.log(connected ? "DB connected" : "DB connection failed");
 });
 
 app.use(express.json());
@@ -22,12 +19,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
-app.get("/", (req, res) => res.json({ 
-  status: "running",
-  db: mongoose.connection.readyState === 1 ? "connected" : "disconnected"
-}));
+// Simple health check
+app.get("/", (req, res) => {
+  res.json({ 
+    status: "running",
+    db: mongoose.connection.readyState === 1 ? "connected" : "disconnected"
+  });
+});
 
+// Your routes
 app.use("/api", require("./Routes/CreateUser"));
 app.use("/api", require("./Routes/DisplayData"));
 app.use("/api", require("./Routes/OrderData"));
@@ -38,11 +38,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Server Error' });
 });
 
-// Server start with error handling
-const server = app.listen(port, () => {
+app.listen(port, () => {
   console.log(`Server running on port ${port}`);
-});
-
-server.on('error', (err) => {
-  console.error("Server error:", err);
 });
