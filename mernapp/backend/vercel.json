@@ -1,25 +1,15 @@
 {
   "version": 2,
- 
   "builds": [
     {
-      "src": "mernapp/backend/index.js",
+      "src": "backend/index.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "mernapp/package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "build" }
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "mernapp/backend/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "mernapp/build/$1"
+      "dest": "backend/index.js"
     }
   ]
 }
