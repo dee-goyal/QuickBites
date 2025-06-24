@@ -1,60 +1,33 @@
-require('dotenv').config();
 const express = require("express");
-const mongoose = require("mongoose");
 const app = express();
-const port = process.env.PORT || 5000;
+const port = 5000;
 const mongoDB = require("./db");
 
-const startServer = async () => {
-  const dbConnected = await mongoDB();
-  if (!dbConnected) {
-    console.error("Fatal: Could not connect to DB");
-    process.exit(1);
-  }
+console.log("Global items:", global.items);
+console.log("Global categories:", global.category);
 
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
-};
-
-startServer().catch(err => {
-  console.error("Server startup error:", err);
-  process.exit(1);
-});
-
-// Non-blocking DB connection
-mongoDB().then(connected => {
-  console.log(connected ? "DB connected" : "DB connection failed");
-});
-
-app.use(express.json());
-
-// CORS
-app.use((req, res, next) => {
+app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept"
+  );
   next();
 });
 
-// Simple health check
-app.get("/", (req, res) => {
-  res.json({ 
-    status: "running",
-    db: mongoose.connection.readyState === 1 ? "connected" : "disconnected"
-  });
-});
+console.log("Starting the application...");
+mongoDB();
 
-// Your routes
-app.use("/api", require("./Routes/CreateUser"));
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+app.use(express.json());
+app.use("/api", require("./routes/CreateUser"));
 app.use("/api", require("./Routes/DisplayData"));
 app.use("/api", require("./Routes/OrderData"));
+app.use("/api", require("./Routes/OrderData"));
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Server Error' });
-});
 
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Example app listening on port ${port}`);
 });
