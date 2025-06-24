@@ -5,6 +5,23 @@ const app = express();
 const port = process.env.PORT || 5000;
 const mongoDB = require("./db");
 
+const startServer = async () => {
+  const dbConnected = await mongoDB();
+  if (!dbConnected) {
+    console.error("Fatal: Could not connect to DB");
+    process.exit(1);
+  }
+
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+};
+
+startServer().catch(err => {
+  console.error("Server startup error:", err);
+  process.exit(1);
+});
+
 // Non-blocking DB connection
 mongoDB().then(connected => {
   console.log(connected ? "DB connected" : "DB connection failed");

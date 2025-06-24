@@ -5,72 +5,49 @@ const { body, validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
-const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30d';
+const jwtSecret = "ikmFccWJ9OBqOGEEVkgtdMcDQ5S4CgdI";
 
 // Route to create a new user
 router.post(
   "/createuser",
   [
-    body("email").isEmail().normalizeEmail(),
-    body("name").isLength({ min: 5 }).trim().escape(),
-    body("password", "Password must be at least 8 characters").isLength({ min: 8 }),
+    body("email").isEmail(),
+    body("name").isLength({ min: 5 }),
+    body("password", "Password must be at least 5 characters").isLength({ min: 5 }),
   ],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        success: false,
-        errors: errors.array() 
-      });
+      return res.status(400).json({ errors: errors.array() });
     }
 
     try {
-      // Check if user already exists
-      const existingUser = await User.findOne({ email: req.body.email });
-      if (existingUser) {
-        return res.status(400).json({ 
-          success: false,
-          message: "User already exists" 
-        });
-      }
-
-      // Hash password with stronger salt rounds
-      const salt = await bcrypt.genSalt(12);
+      const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(req.body.password, salt);
 
-      const newUser = await User.create({
+      await User.create({
         name: req.body.name,
         password: hashedPassword,
         email: req.body.email,
         location: req.body.location,
       });
 
-      const authToken = jwt.sign(
-        { 
-          userId: newUser._id,
-          iat: Math.floor(Date.now() / 1000) // issued at
-        },
-        JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
-      );
+      const userData = await User.findOne({ email: req.body.email });
+      if (!userData) {
+        return res.status(400).json({ errors: "User creation failed" });
+      }
 
-      res.json({ 
-        success: true, 
-        authToken,
+      const data = {
         user: {
-          id: newUser._id,
-          name: newUser.name,
-          email: newUser.email
-        }
-      });
+          id: userData.id,
+        },
+      };
+
+      const authToken = jwt.sign(data, jwtSecret);
+      res.json({ success: true, authToken });
     } catch (error) {
       console.error("Error during user creation:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "Internal Server Error",
-        error: error.message 
-      });
+      res.status(500).json({ success: false, message: "Internal Server Error" });
     }
   }
 );
@@ -79,60 +56,39 @@ router.post(
 router.post(
   "/loginuser",
   [
-    body("email").isEmail().normalizeEmail(),
-    body("password", "Password must be at least 8 characters").isLength({ min: 8 }),
+    body("email").isEmail(),
+    body("password", "Password must be at least 5 characters").isLength({ min: 5 }),
   ],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        success: false,
-        errors: errors.array() 
-      });
+      return res.status(400).json({ errors: errors.array() });
     }
 
+    const { email, password } = req.body;
+
     try {
-      const user = await User.findOne({ email: req.body.email });
-      if (!user) {
-        return res.status(401).json({ 
-          success: false,
-          message: "Invalid credentials" 
-        });
+      const userData = await User.findOne({ email });
+      if (!userData) {
+        return res.status(400).json({ errors: "Invalid credentials" });
       }
 
-      const isPasswordValid = await bcrypt.compare(req.body.password, user.password);
-      if (!isPasswordValid) {
-        return res.status(401).json({ 
-          success: false,
-          message: "Invalid credentials" 
-        });
+      const isPasswordCorrect = await bcrypt.compare(password, userData.password);
+      if (!isPasswordCorrect) {
+        return res.status(400).json({ errors: "Invalid credentials" });
       }
 
-      const authToken = jwt.sign(
-        { 
-          userId: user._id,
-          iat: Math.floor(Date.now() / 1000)
-        },
-        JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
-      );
-
-      res.json({
-        success: true,
-        authToken,
+      const data = {
         user: {
-          id: user._id,
-          name: user.name,
-          email: user.email
-        }
-      });
+          id: userData.id,
+        },
+      };
+
+      const authToken = jwt.sign(data, jwtSecret);
+      res.json({ success: true, authToken });
     } catch (error) {
       console.error("Error during login:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "Internal Server Error",
-        error: error.message 
-      });
+      res.status(500).json({ success: false, message: "Internal Server Error" });
     }
   }
 );
