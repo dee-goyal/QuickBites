@@ -53,7 +53,7 @@ export default function Navbar() {
               {isLoggedIn && (
                 <>
                   <li className="nav-item">
-                    <Link className="nav-link active fs-5" to="/orders">
+                    <Link className="nav-link active fs-5" to="/myorder">
                       My Orders
                     </Link>
                   </li>

@@ -1,8 +1,8 @@
+require('dotenv').config();
 const mongoose = require("mongoose");
 
 // Updated MongoDB connection URI
-const mongoURI =
-  "mongodb+srv://QuickBites:deepi1205@cluster0.u6hkh.mongodb.net/QuickBitesmern";
+const mongoURI = process.env.MONGO_URI;
 
 const mongoDB = async () => {
   try {
