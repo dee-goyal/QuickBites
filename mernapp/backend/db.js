@@ -1,37 +1,32 @@
 require('dotenv').config();
 const mongoose = require("mongoose");
 
-// Updated MongoDB connection URI
-const mongoURI = process.env.MONGO_URI;
-
 const mongoDB = async () => {
   try {
-    console.log("Attempting to connect to MongoDB...");
-
-    // Connect to MongoDB with updated URI and options
-    await mongoose.connect(mongoURI, {
+    console.log("Connecting to MongoDB...");
+    
+    await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,  // Added timeout
+      retryWrites: true,
+      w: "majority"
     });
-    console.log("Successfully connected to MongoDB");
 
-    // Accessing the 'items' collection and fetching data
-    const fetched_data = await mongoose.connection.db.collection("items").find({}).toArray();
+    console.log("MongoDB connected successfully");
     
-    // Fetching data from the 'category' collection
-    const category = await mongoose.connection.db.collection("category").find({}).toArray();
-    
-    // Storing data in global variables
-    global.items = fetched_data;
-    global.category = category;
+    // Verify connection
+    if (mongoose.connection.readyState !== 1) {
+      throw new Error("MongoDB connection not established");
+    }
 
-    console.log(global.items);
+    // Fetch data
+    global.items = await mongoose.connection.db.collection("items").find({}).toArray();
+    global.category = await mongoose.connection.db.collection("category").find({}).toArray();
 
   } catch (error) {
-    console.error(
-      "Error connecting to MongoDB or fetching data:",
-      error.message
-    );
+    console.error("MongoDB Error:", error);
+    throw error; // Important for Vercel to catch failures
   }
 };
 
